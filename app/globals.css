@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 17px;
+  }
+  body {
+    @apply bg-background text-text-primary antialiased;
+  }
+}
+
+@layer components {
+  .tag-pill {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors;
+  }
+
+  .tag-pill-violet {
+    @apply tag-pill bg-violet/10 text-violet;
+  }
+
+  .tag-pill-coral {
+    @apply tag-pill bg-coral/10 text-coral;
+  }
+
+  .tag-pill-amber {
+    @apply tag-pill bg-amber/20 text-orange-700;
+  }
+
+  .card-hover {
+    @apply transition-all duration-150 ease-out hover:-translate-y-1 hover:shadow-lg;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
