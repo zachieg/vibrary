@@ -54,6 +54,20 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
   // honeypot
   const [hp, setHp] = useState("");
 
+  // GitHub Import
+  const [githubUrl, setGithubUrl] = useState("");
+  const [githubImporting, setGithubImporting] = useState(false);
+  const [githubError, setGithubError] = useState<string | null>(null);
+
+  // OG screenshot
+  const [ogScreenshotUrl, setOgScreenshotUrl] = useState<string | null>(null);
+  const [ogPreview, setOgPreview] = useState<{ ogImage: string | null } | null>(null);
+  const [ogFetching, setOgFetching] = useState(false);
+
+  // AI Polish
+  const [polishing, setPolishing] = useState(false);
+  const [polishError, setPolishError] = useState<string | null>(null);
+
   function validate(): FormErrors {
     const errs: FormErrors = {};
     if (!title.trim()) errs.title = "Title is required";
@@ -100,6 +114,94 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
     if (tag && !selectedTags.includes(tag) && selectedTags.length < 5) {
       setSelectedTags((prev) => [...prev, tag]);
       setCustomTag("");
+    }
+  }
+
+  async function handleGithubImport() {
+    if (!githubUrl.trim()) return;
+    setGithubImporting(true);
+    setGithubError(null);
+    try {
+      const res = await fetch("/api/v1/import-github", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: githubUrl.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setGithubError(data.error ?? "Import failed. Please try again.");
+        return;
+      }
+      // Only fill blank fields — never overwrite user edits
+      if (data.title && !title) setTitle(data.title);
+      if (data.tagline && !tagline) setTagline(data.tagline);
+      if (data.description && !description) setDescription(data.description);
+      if (data.demoUrl && !demoUrl) setDemoUrl(data.demoUrl);
+      if (data.repoUrl && !repoUrl) setRepoUrl(data.repoUrl);
+      if (data.tags?.length > 0 && selectedTags.length === 0) {
+        setSelectedTags(data.tags.slice(0, 5));
+      }
+    } catch {
+      setGithubError("Network error. Please try again.");
+    } finally {
+      setGithubImporting(false);
+    }
+  }
+
+  async function handleDemoUrlBlur() {
+    if (!demoUrl.trim() || !isValidUrl(demoUrl)) return;
+    setOgFetching(true);
+    setOgPreview(null);
+    try {
+      const res = await fetch("/api/v1/fetch-meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: demoUrl.trim() }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.ogImage) setOgPreview(data);
+    } catch {
+      // Silent failure — manual upload still available
+    } finally {
+      setOgFetching(false);
+    }
+  }
+
+  function handleUseOgImage() {
+    if (ogPreview?.ogImage) {
+      setOgScreenshotUrl(ogPreview.ogImage);
+      setScreenshot(null);
+    }
+  }
+
+  function handleClearScreenshot() {
+    setOgScreenshotUrl(null);
+    setOgPreview(null);
+    setScreenshot(null);
+  }
+
+  async function handleAiPolish() {
+    if (description.trim().length < 100) return;
+    setPolishing(true);
+    setPolishError(null);
+    try {
+      const res = await fetch("/api/v1/ai-polish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: description.trim(), tagline: tagline.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPolishError(data.error ?? "AI polish failed. Please try again.");
+        return;
+      }
+      if (data.tagline) setTagline(data.tagline);
+      if (data.description) setDescription(data.description);
+    } catch {
+      setPolishError("Network error. Please try again.");
+    } finally {
+      setPolishing(false);
     }
   }
 
@@ -152,7 +254,7 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
 
       // New submission
       const slug = generateUniqueSlug(title);
-      let screenshotUrl: string | null = null;
+      let screenshotUrl: string | null = ogScreenshotUrl;
 
       if (screenshot) {
         const ext = screenshot.name.split(".").pop() || "png";
@@ -222,6 +324,44 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
       {errors.form && (
         <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">
           {errors.form}
+        </div>
+      )}
+
+      {/* GitHub Import */}
+      {!isEditMode && (
+        <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-4">
+          <p className="text-sm font-medium text-text-primary">
+            Import from GitHub{" "}
+            <span className="font-normal text-text-secondary">— auto-fill from a public repo</span>
+          </p>
+          <div className="mt-2 flex gap-2">
+            <input
+              type="url"
+              value={githubUrl}
+              onChange={(e) => setGithubUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); handleGithubImport(); }
+              }}
+              placeholder="https://github.com/owner/repo"
+              className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
+            />
+            <button
+              type="button"
+              onClick={handleGithubImport}
+              disabled={githubImporting || !githubUrl.trim()}
+              className="rounded-lg bg-coral px-4 py-2 text-sm font-medium text-white hover:bg-coral/90 disabled:opacity-50"
+            >
+              {githubImporting ? "Importing…" : "Import"}
+            </button>
+          </div>
+          {githubError && (
+            <p className="mt-1.5 text-xs text-red-500">{githubError}</p>
+          )}
+          {!githubError && (
+            <p className="mt-1.5 text-xs text-text-secondary">
+              Fills title, tagline, description, tags, and URLs. You can edit everything after.
+            </p>
+          )}
         </div>
       )}
 
@@ -296,6 +436,26 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
         </p>
       </div>
 
+      {/* AI Polish */}
+      {description.trim().length >= 100 && (
+        <div className="flex items-center justify-between rounded-lg bg-violet/5 px-4 py-3">
+          <p className="text-xs text-text-secondary">
+            Let AI clean up the description and write a better tagline.
+          </p>
+          <button
+            type="button"
+            onClick={handleAiPolish}
+            disabled={polishing}
+            className="ml-4 shrink-0 rounded-lg bg-violet px-3 py-1.5 text-xs font-medium text-white hover:bg-violet/90 disabled:opacity-50"
+          >
+            {polishing ? "Polishing…" : "Polish with AI ✦"}
+          </button>
+        </div>
+      )}
+      {polishError && (
+        <p className="text-xs text-red-500">{polishError}</p>
+      )}
+
       {/* Demo URL */}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-text-primary">
@@ -305,6 +465,7 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
           type="url"
           value={demoUrl}
           onChange={(e) => setDemoUrl(e.target.value)}
+          onBlur={handleDemoUrlBlur}
           placeholder="https://your-project.vercel.app"
           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
         />
@@ -338,13 +499,52 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
         <label className="mb-1.5 block text-sm font-medium text-text-primary">
           Screenshot
         </label>
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
-          className="w-full text-sm text-text-secondary file:mr-3 file:rounded-lg file:border-0 file:bg-coral/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-coral hover:file:bg-coral/20"
-        />
-        <p className="mt-1 text-xs text-text-secondary">PNG, JPG, or WebP. Max 5MB.</p>
+
+        {ogFetching && (
+          <p className="mb-2 animate-pulse text-xs text-text-secondary">Fetching preview from demo URL…</p>
+        )}
+
+        {ogPreview?.ogImage && !ogScreenshotUrl && (
+          <div className="mb-3 rounded-lg border border-gray-200 p-3">
+            <p className="mb-2 text-xs font-medium text-text-secondary">Found preview image from your demo URL:</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ogPreview.ogImage} alt="OG preview" className="max-h-40 w-auto rounded object-cover" />
+            <button
+              type="button"
+              onClick={handleUseOgImage}
+              className="mt-2 rounded-lg bg-violet/10 px-3 py-1.5 text-xs font-medium text-violet hover:bg-violet/20"
+            >
+              Use this image
+            </button>
+          </div>
+        )}
+
+        {ogScreenshotUrl && (
+          <div className="mb-3 rounded-lg border border-violet/30 bg-violet/5 p-3">
+            <p className="mb-2 text-xs font-medium text-violet">Using preview image from demo URL</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ogScreenshotUrl} alt="Selected preview" className="max-h-40 w-auto rounded object-cover" />
+            <button
+              type="button"
+              onClick={handleClearScreenshot}
+              className="mt-2 text-xs text-text-secondary underline hover:text-red-500"
+            >
+              Remove and upload manually instead
+            </button>
+          </div>
+        )}
+
+        {!ogScreenshotUrl && (
+          <>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
+              className="w-full text-sm text-text-secondary file:mr-3 file:rounded-lg file:border-0 file:bg-coral/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-coral hover:file:bg-coral/20"
+            />
+            <p className="mt-1 text-xs text-text-secondary">PNG, JPG, or WebP. Max 5MB.</p>
+          </>
+        )}
       </div>
 
       {/* How I Built This */}
