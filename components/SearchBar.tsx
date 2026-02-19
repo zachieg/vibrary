@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useCallback } from "react";
 
 export default function SearchBar({ className = "" }: { className?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
 
@@ -18,9 +19,9 @@ export default function SearchBar({ className = "" }: { className?: string }) {
         params.delete("q");
       }
       params.delete("offset");
-      router.push(`/?${params.toString()}`);
+      router.push(`${pathname}?${params.toString()}`);
     },
-    [query, router, searchParams]
+    [query, router, pathname, searchParams]
   );
 
   return (

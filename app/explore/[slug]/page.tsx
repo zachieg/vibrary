@@ -1,15 +1,18 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { COLLECTIONS } from "@/lib/collections";
 import type { Project } from "@/lib/types";
 import ProjectGrid from "@/components/ProjectGrid";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import SearchBar from "@/components/SearchBar";
 
 interface CollectionPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ q?: string }>;
 }
 
 function getCollection(slug: string) {
@@ -33,8 +36,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function CollectionPage({ params }: CollectionPageProps) {
+export default async function CollectionPage({ params, searchParams }: CollectionPageProps) {
   const { slug } = await params;
+  const { q } = await searchParams;
   const collection = getCollection(slug);
   if (!collection) notFound();
 
@@ -51,6 +55,11 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   }
   if (collection.query.ai_tool) {
     query = query.ilike("ai_tool_used", collection.query.ai_tool);
+  }
+  if (q) {
+    query = query.or(
+      `title.ilike.%${q}%,tagline.ilike.%${q}%,description.ilike.%${q}%`
+    );
   }
 
   const { data, error } = await query;
@@ -81,12 +90,18 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
         <p className="mt-3 text-xl text-text-secondary">
           {collection.description}
         </p>
-        <p className="mt-1 text-base text-text-secondary">
-          {projects.length} project{projects.length !== 1 ? "s" : ""}
-        </p>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-6">
+        <Suspense>
+          <SearchBar className="max-w-md" />
+        </Suspense>
+      </div>
+
+      <div className="mt-6">
+        <p className="mb-4 text-base text-text-secondary">
+          {projects.length} project{projects.length !== 1 ? "s" : ""} found
+        </p>
         <ProjectGrid projects={projects} />
       </div>
     </div>

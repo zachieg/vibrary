@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ALL_TAGS, AI_TOOLS, SETUP_DIFFICULTIES } from "@/lib/types";
 
 const SORT_OPTIONS = [
@@ -10,6 +10,7 @@ const SORT_OPTIONS = [
 
 export default function FilterBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const activeTags = searchParams.get("tags")?.split(",").filter(Boolean) ?? [];
@@ -25,7 +26,7 @@ export default function FilterBar() {
       params.delete(key);
     }
     params.delete("offset");
-    router.push(`/?${params.toString()}`);
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   function toggleTag(tag: string) {
@@ -85,7 +86,7 @@ export default function FilterBar() {
               params.delete("ai_tool");
               params.delete("setup_difficulty");
               params.delete("offset");
-              router.push(`/?${params.toString()}`);
+              router.push(`${pathname}?${params.toString()}`);
             }}
             className="text-sm text-coral hover:underline"
           >
