@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ALL_TAGS, AI_TOOLS } from "@/lib/types";
+import { ALL_TAGS, AI_TOOLS, SETUP_DIFFICULTIES } from "@/lib/types";
 import { isValidUrl, isValidEmail, generateUniqueSlug } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
@@ -10,21 +10,44 @@ interface FormErrors {
   [key: string]: string;
 }
 
-export default function SubmitForm() {
+interface EditableFields {
+  title?: string;
+  tagline?: string;
+  description?: string;
+  demo_url?: string | null;
+  repo_url?: string | null;
+  build_story?: string | null;
+  setup_difficulty?: string | null;
+  quick_start?: string | null;
+  tags?: string[];
+  ai_tool_used?: string;
+}
+
+interface SubmitFormProps {
+  editSlug?: string;
+  initialData?: EditableFields;
+}
+
+export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = {}) {
+  const isEditMode = !!editSlug;
   const router = useRouter();
   const supabase = createClient();
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const [title, setTitle] = useState("");
-  const [tagline, setTagline] = useState("");
-  const [description, setDescription] = useState("");
-  const [demoUrl, setDemoUrl] = useState("");
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [tagline, setTagline] = useState(initialData?.tagline ?? "");
+  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [demoUrl, setDemoUrl] = useState(initialData?.demo_url ?? "");
+  const [repoUrl, setRepoUrl] = useState(initialData?.repo_url ?? "");
+  const [buildStory, setBuildStory] = useState(initialData?.build_story ?? "");
+  const [setupDifficulty, setSetupDifficulty] = useState(initialData?.setup_difficulty ?? "");
+  const [quickStart, setQuickStart] = useState(initialData?.quick_start ?? "");
   const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialData?.tags ?? []);
   const [customTag, setCustomTag] = useState("");
-  const [aiTool, setAiTool] = useState("");
+  const [aiTool, setAiTool] = useState(initialData?.ai_tool_used ?? "");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
@@ -43,19 +66,25 @@ export default function SubmitForm() {
     else if (description.length > 5000) errs.description = "Max 5000 characters";
 
     if (demoUrl && !isValidUrl(demoUrl)) errs.demoUrl = "Must be a valid URL";
+    if (repoUrl && !isValidUrl(repoUrl)) errs.repoUrl = "Must be a valid URL";
+
+    if (buildStory.length > 3000) errs.buildStory = "Max 3000 characters";
+    if (quickStart.length > 2000) errs.quickStart = "Max 2000 characters";
 
     if (selectedTags.length === 0) errs.tags = "Select at least one tag";
     if (selectedTags.length > 5) errs.tags = "Max 5 tags";
 
     if (!aiTool) errs.aiTool = "Select the AI tool used";
 
-    if (!name.trim()) errs.name = "Name is required";
-    else if (name.length > 50) errs.name = "Max 50 characters";
+    if (!isEditMode) {
+      if (!name.trim()) errs.name = "Name is required";
+      else if (name.length > 50) errs.name = "Max 50 characters";
 
-    if (!email.trim()) errs.email = "Email is required";
-    else if (!isValidEmail(email)) errs.email = "Invalid email format";
+      if (!email.trim()) errs.email = "Email is required";
+      else if (!isValidEmail(email)) errs.email = "Invalid email format";
 
-    if (website && !isValidUrl(website)) errs.website = "Must be a valid URL";
+      if (website && !isValidUrl(website)) errs.website = "Must be a valid URL";
+    }
 
     return errs;
   }
@@ -89,6 +118,39 @@ export default function SubmitForm() {
     setSubmitting(true);
 
     try {
+      if (isEditMode) {
+        // PATCH existing project via API (handles auth server-side)
+        const res = await fetch(`/api/v1/projects/${editSlug}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: title.trim(),
+            tagline: tagline.trim(),
+            description: description.trim(),
+            demo_url: demoUrl.trim() || null,
+            repo_url: repoUrl.trim() || null,
+            build_story: buildStory.trim() || null,
+            setup_difficulty: setupDifficulty || null,
+            quick_start: quickStart.trim() || null,
+            tags: selectedTags,
+            ai_tool_used: aiTool,
+          }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? "Update failed");
+        }
+
+        const updated = await res.json();
+        setShowSuccess(true);
+        setTimeout(() => {
+          router.push(`/project/${updated.slug ?? editSlug}`);
+        }, 1500);
+        return;
+      }
+
+      // New submission
       const slug = generateUniqueSlug(title);
       let screenshotUrl: string | null = null;
 
@@ -115,6 +177,10 @@ export default function SubmitForm() {
           tagline: tagline.trim(),
           description: description.trim(),
           demo_url: demoUrl.trim() || null,
+          repo_url: repoUrl.trim() || null,
+          build_story: buildStory.trim() || null,
+          setup_difficulty: setupDifficulty || null,
+          quick_start: quickStart.trim() || null,
           screenshot_url: screenshotUrl,
           tags: selectedTags,
           ai_tool_used: aiTool,
@@ -133,7 +199,7 @@ export default function SubmitForm() {
       }, 1500);
     } catch (err) {
       console.error("Submit error:", err);
-      setErrors({ form: "Something went wrong. Please try again." });
+      setErrors({ form: err instanceof Error ? err.message : "Something went wrong. Please try again." });
     } finally {
       setSubmitting(false);
     }
@@ -142,9 +208,9 @@ export default function SubmitForm() {
   if (showSuccess) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
-        <span className="text-6xl">🎉</span>
+        <span className="text-6xl">{isEditMode ? "✅" : "🎉"}</span>
         <h2 className="mt-4 font-serif text-2xl font-bold text-text-primary">
-          Your project is live!
+          {isEditMode ? "Changes saved!" : "Your project is live!"}
         </h2>
         <p className="mt-2 text-text-secondary">Redirecting you now...</p>
       </div>
@@ -247,6 +313,26 @@ export default function SubmitForm() {
         )}
       </div>
 
+      {/* Repository URL */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-text-primary">
+          Repository URL
+        </label>
+        <input
+          type="url"
+          value={repoUrl}
+          onChange={(e) => setRepoUrl(e.target.value)}
+          placeholder="https://github.com/you/your-project"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
+        />
+        {errors.repoUrl && (
+          <p className="mt-1 text-xs text-red-500">{errors.repoUrl}</p>
+        )}
+        <p className="mt-1 text-xs text-text-secondary">
+          Link to the source code so others (and AI agents) can learn from it.
+        </p>
+      </div>
+
       {/* Screenshot */}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-text-primary">
@@ -259,6 +345,72 @@ export default function SubmitForm() {
           className="w-full text-sm text-text-secondary file:mr-3 file:rounded-lg file:border-0 file:bg-coral/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-coral hover:file:bg-coral/20"
         />
         <p className="mt-1 text-xs text-text-secondary">PNG, JPG, or WebP. Max 5MB.</p>
+      </div>
+
+      {/* How I Built This */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-text-primary">
+          How I Built This
+        </label>
+        <textarea
+          value={buildStory}
+          onChange={(e) => setBuildStory(e.target.value)}
+          maxLength={3000}
+          rows={4}
+          placeholder="What prompts worked? What AI tool features helped? What did you iterate on?"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
+        />
+        {errors.buildStory && (
+          <p className="mt-1 text-xs text-red-500">{errors.buildStory}</p>
+        )}
+        <p className="mt-1 text-xs text-text-secondary">
+          Share your build process — this is what makes Vibrary different from GitHub. {buildStory.length}/3000
+        </p>
+      </div>
+
+      {/* Setup Difficulty */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-text-primary">
+          Setup Difficulty
+        </label>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {SETUP_DIFFICULTIES.map((d) => (
+            <button
+              key={d.value}
+              type="button"
+              onClick={() => setSetupDifficulty(setupDifficulty === d.value ? "" : d.value)}
+              className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                setupDifficulty === d.value
+                  ? "border-coral bg-coral/5 text-text-primary"
+                  : "border-gray-200 text-text-secondary hover:border-gray-300"
+              }`}
+            >
+              <span className="block text-sm font-medium">{d.label}</span>
+              <span className="block text-xs">{d.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Start */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-text-primary">
+          Quick Start Guide
+        </label>
+        <textarea
+          value={quickStart}
+          onChange={(e) => setQuickStart(e.target.value)}
+          maxLength={2000}
+          rows={3}
+          placeholder={"1. Clone the repo\n2. Run npm install\n3. Add .env with SUPABASE_URL=...\n4. npm run dev"}
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
+        />
+        {errors.quickStart && (
+          <p className="mt-1 text-xs text-red-500">{errors.quickStart}</p>
+        )}
+        <p className="mt-1 text-xs text-text-secondary">
+          Step-by-step setup so anyone (or any agent) can get running fast. {quickStart.length}/2000
+        </p>
       </div>
 
       {/* Tags */}
@@ -352,8 +504,13 @@ export default function SubmitForm() {
         )}
       </div>
 
-      {/* Submitter Info */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Submitter Info — hidden in edit mode */}
+      {isEditMode && (
+        <p className="rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
+          Editing as the project owner. Submitter info cannot be changed.
+        </p>
+      )}
+      <div className={`grid gap-4 sm:grid-cols-2 ${isEditMode ? "hidden" : ""}`}>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-text-primary">
             Your Name *
@@ -387,21 +544,23 @@ export default function SubmitForm() {
         </div>
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-sm font-medium text-text-primary">
-          Website / Profile
-        </label>
-        <input
-          type="url"
-          value={website}
-          onChange={(e) => setWebsite(e.target.value)}
-          placeholder="https://github.com/you"
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
-        />
-        {errors.website && (
-          <p className="mt-1 text-xs text-red-500">{errors.website}</p>
-        )}
-      </div>
+      {!isEditMode && (
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-text-primary">
+            Website / Profile
+          </label>
+          <input
+            type="url"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            placeholder="https://github.com/you"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
+          />
+          {errors.website && (
+            <p className="mt-1 text-xs text-red-500">{errors.website}</p>
+          )}
+        </div>
+      )}
 
       {/* Submit */}
       <button
@@ -409,7 +568,10 @@ export default function SubmitForm() {
         disabled={submitting}
         className="w-full rounded-xl bg-coral py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-coral/90 hover:shadow-md disabled:opacity-60"
       >
-        {submitting ? "Submitting..." : "Submit Project"}
+        {submitting
+          ? isEditMode ? "Saving..." : "Submitting..."
+          : isEditMode ? "Save Changes" : "Submit Project"
+        }
       </button>
     </form>
   );

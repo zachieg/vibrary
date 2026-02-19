@@ -69,7 +69,7 @@ export default function SettingsPage() {
   const previewAvatar = avatarUrl.trim();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-3xl px-6 py-10 sm:px-8 lg:px-12">
       <div className="mb-8">
         <h1 className="font-serif text-2xl font-bold text-text-primary">
           Settings

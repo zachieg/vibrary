@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get("q");
   const tags = searchParams.get("tags");
   const aiTool = searchParams.get("ai_tool");
+  const setupDifficulty = searchParams.get("setup_difficulty");
   const featured = searchParams.get("featured");
   const sort = searchParams.get("sort") ?? "newest";
   const limit = Math.min(parseInt(searchParams.get("limit") ?? "20", 10), 50);
@@ -51,6 +52,10 @@ export async function GET(request: NextRequest) {
 
   if (aiTool) {
     query = query.ilike("ai_tool_used", aiTool);
+  }
+
+  if (setupDifficulty) {
+    query = query.eq("setup_difficulty", setupDifficulty);
   }
 
   if (sort === "popular") {
@@ -128,6 +133,18 @@ export async function POST(request: NextRequest) {
     if (body.demo_url && !isValidUrl(body.demo_url)) {
       return NextResponse.json({ error: "Invalid demo URL" }, { status: 400 });
     }
+    if (body.repo_url && !isValidUrl(body.repo_url)) {
+      return NextResponse.json({ error: "Invalid repository URL" }, { status: 400 });
+    }
+    if (body.build_story && body.build_story.length > 3000) {
+      return NextResponse.json({ error: "Build story max 3000 characters" }, { status: 400 });
+    }
+    if (body.setup_difficulty && !["trivial", "easy", "moderate", "complex"].includes(body.setup_difficulty)) {
+      return NextResponse.json({ error: "Invalid setup difficulty" }, { status: 400 });
+    }
+    if (body.quick_start && body.quick_start.length > 2000) {
+      return NextResponse.json({ error: "Quick start max 2000 characters" }, { status: 400 });
+    }
 
     const tags = Array.isArray(body.tags) ? body.tags.slice(0, 5) : [];
     const slug = generateUniqueSlug(body.title);
@@ -140,6 +157,10 @@ export async function POST(request: NextRequest) {
         tagline: body.tagline.trim(),
         description: body.description.trim(),
         demo_url: body.demo_url?.trim() || null,
+        repo_url: body.repo_url?.trim() || null,
+        build_story: body.build_story?.trim() || null,
+        setup_difficulty: body.setup_difficulty || null,
+        quick_start: body.quick_start?.trim() || null,
         screenshot_url: body.screenshot_url?.trim() || null,
         tags,
         ai_tool_used: body.ai_tool_used.trim(),

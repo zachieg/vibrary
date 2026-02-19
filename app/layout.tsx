@@ -14,6 +14,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://vibrary.vercel.app"),
   title: {
     default: "Vibrary — The Open Library for Vibecoded Projects",
     template: "%s | Vibrary",
@@ -25,6 +26,13 @@ export const metadata: Metadata = {
     description:
       "Discover, share, and clone community-created vibecoded projects.",
     type: "website",
+    siteName: "Vibrary",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vibrary — The Open Library for Vibecoded Projects",
+    description:
+      "Discover, share, and clone community-created vibecoded projects.",
   },
 };
 

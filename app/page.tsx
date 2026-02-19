@@ -14,6 +14,7 @@ interface HomePageProps {
     q?: string;
     tags?: string;
     ai_tool?: string;
+    setup_difficulty?: string;
     sort?: string;
     offset?: string;
   }>;
@@ -37,6 +38,7 @@ async function fetchProjects(params: {
   q?: string;
   tags?: string;
   ai_tool?: string;
+  setup_difficulty?: string;
   sort?: string;
   offset?: string;
 }) {
@@ -66,6 +68,10 @@ async function fetchProjects(params: {
     query = query.ilike("ai_tool_used", params.ai_tool);
   }
 
+  if (params.setup_difficulty) {
+    query = query.eq("setup_difficulty", params.setup_difficulty);
+  }
+
   if (params.sort === "popular") {
     query = query.order("upvotes", { ascending: false });
   } else {
@@ -91,14 +97,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const hasMore = offset + limit < total;
   const hasPrev = offset > 0;
-  const isFiltering = params.q || params.tags || params.ai_tool;
+  const isFiltering = params.q || params.tags || params.ai_tool || params.setup_difficulty;
 
   return (
     <div>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-coral/10 via-violet/5 to-amber/10 py-20">
-        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6">
-          <h1 className="font-serif text-5xl font-bold tracking-tight text-text-primary sm:text-6xl">
+      <section className="bg-gradient-to-br from-coral/10 via-violet/5 to-amber/10 py-14">
+        <div className="mx-auto max-w-5xl px-6 text-center sm:px-8 lg:px-12">
+          <h1 className="font-serif text-4xl font-bold tracking-tight text-text-primary sm:text-5xl">
             The open library for
             <span className="bg-gradient-to-r from-coral to-violet bg-clip-text text-transparent">
               {" "}vibecoded{" "}
@@ -128,7 +134,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       {/* Editor's Picks */}
       {featuredProjects.length > 0 && !isFiltering && (
-        <section className="mx-auto max-w-screen-2xl px-4 pt-10 sm:px-6">
+        <section className="mx-auto max-w-7xl px-6 pt-10 sm:px-8 lg:px-12">
           <h2 className="font-serif text-3xl font-bold text-text-primary">
             Editor&apos;s Picks
           </h2>
@@ -147,6 +153,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   created_at={project.created_at}
                   upvotes={project.upvotes}
                   featured
+                  setup_difficulty={project.setup_difficulty}
                 />
               </div>
             ))}
@@ -155,7 +162,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       )}
 
       {/* Search + Filters + Grid */}
-      <section className="mx-auto max-w-screen-2xl px-4 py-10 sm:px-6">
+      <section className="mx-auto max-w-7xl px-6 py-10 sm:px-8 lg:px-12">
         <Suspense>
           <SearchBar className="mx-auto max-w-3xl" />
           <div className="mt-6">

@@ -39,6 +39,7 @@ export default function ProjectGrid({
           screenshot_url={project.screenshot_url}
           created_at={project.created_at}
           upvotes={project.upvotes}
+          setup_difficulty={project.setup_difficulty}
         />
       ))}
     </div>

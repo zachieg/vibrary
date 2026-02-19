@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { ALL_TAGS, AI_TOOLS } from "@/lib/types";
+import { ALL_TAGS, AI_TOOLS, SETUP_DIFFICULTIES } from "@/lib/types";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -15,6 +15,7 @@ export default function FilterBar() {
   const activeTags = searchParams.get("tags")?.split(",").filter(Boolean) ?? [];
   const activeAiTool = searchParams.get("ai_tool") ?? "";
   const activeSort = searchParams.get("sort") ?? "newest";
+  const activeDifficulty = searchParams.get("setup_difficulty") ?? "";
 
   function updateParams(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -63,12 +64,26 @@ export default function FilterBar() {
           ))}
         </select>
 
-        {(activeTags.length > 0 || activeAiTool) && (
+        <select
+          value={activeDifficulty}
+          onChange={(e) => updateParams("setup_difficulty", e.target.value)}
+          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-text-primary focus:border-coral focus:outline-none focus:ring-1 focus:ring-coral/20"
+        >
+          <option value="">All Difficulties</option>
+          {SETUP_DIFFICULTIES.map((d) => (
+            <option key={d.value} value={d.value}>
+              {d.label}
+            </option>
+          ))}
+        </select>
+
+        {(activeTags.length > 0 || activeAiTool || activeDifficulty) && (
           <button
             onClick={() => {
               const params = new URLSearchParams(searchParams.toString());
               params.delete("tags");
               params.delete("ai_tool");
+              params.delete("setup_difficulty");
               params.delete("offset");
               router.push(`/?${params.toString()}`);
             }}

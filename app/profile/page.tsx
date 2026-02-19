@@ -64,7 +64,7 @@ export default function ProfilePage() {
   const githubUsername = user.user_metadata?.user_name;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <div className="mx-auto max-w-5xl px-6 py-10 sm:px-8 lg:px-12">
       {/* Profile header */}
       <div className="flex items-center gap-5">
         {avatarUrl ? (

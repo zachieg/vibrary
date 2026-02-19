@@ -5,6 +5,10 @@ export interface Project {
   tagline: string;
   description: string;
   demo_url: string | null;
+  repo_url: string | null;
+  build_story: string | null;
+  setup_difficulty: string | null;
+  quick_start: string | null;
   screenshot_url: string | null;
   tags: string[];
   ai_tool_used: string;
@@ -24,6 +28,10 @@ export interface ProjectInsert {
   tagline: string;
   description: string;
   demo_url?: string | null;
+  repo_url?: string | null;
+  build_story?: string | null;
+  setup_difficulty?: string | null;
+  quick_start?: string | null;
   screenshot_url?: string | null;
   tags: string[];
   ai_tool_used: string;
@@ -53,6 +61,22 @@ export interface ProjectRequestInsert {
   requester_email: string;
 }
 
+export interface Comment {
+  id: string;
+  project_slug: string;
+  author_name: string;
+  author_email: string;
+  content: string;
+  created_at: string;
+}
+
+export interface CommentInsert {
+  project_slug: string;
+  author_name: string;
+  author_email: string;
+  content: string;
+}
+
 export interface ProjectListResponse {
   projects: Omit<Project, "submitter_email">[];
   total: number;
@@ -66,6 +90,13 @@ export interface RequestListResponse {
   limit: number;
   offset: number;
 }
+
+export const SETUP_DIFFICULTIES = [
+  { value: "trivial", label: "Trivial", desc: "Clone and run — no config needed" },
+  { value: "easy", label: "Easy", desc: "A few env vars or simple setup" },
+  { value: "moderate", label: "Moderate", desc: "Database, API keys, or multi-step setup" },
+  { value: "complex", label: "Complex", desc: "Significant config, multiple services" },
+] as const;
 
 export const AI_TOOLS = [
   "Claude",

@@ -16,6 +16,7 @@ interface ProjectCardProps {
   created_at: string;
   upvotes: number;
   featured?: boolean;
+  setup_difficulty?: string | null;
 }
 
 export default function ProjectCard({
@@ -30,6 +31,7 @@ export default function ProjectCard({
   created_at,
   upvotes,
   featured,
+  setup_difficulty,
 }: ProjectCardProps) {
   return (
     <Link href={`/project/${slug}`} className="group block">
@@ -83,7 +85,19 @@ export default function ProjectCard({
 
           {/* Footer */}
           <div className="mt-3 flex items-center justify-between text-sm text-text-secondary">
-            <span>{submitter_name}</span>
+            <div className="flex items-center gap-2">
+              <span>{submitter_name}</span>
+              {setup_difficulty && (
+                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                  setup_difficulty === "trivial" ? "bg-green-100 text-green-700" :
+                  setup_difficulty === "easy" ? "bg-blue-100 text-blue-700" :
+                  setup_difficulty === "moderate" ? "bg-amber-100 text-amber-700" :
+                  "bg-red-100 text-red-700"
+                }`}>
+                  {setup_difficulty.charAt(0).toUpperCase() + setup_difficulty.slice(1)}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <UpvoteButton id={id} type="project" initialCount={upvotes} />
               <span>{timeAgo(created_at)}</span>

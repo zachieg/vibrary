@@ -1,12 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { COLLECTIONS } from "@/lib/collections";
 import type { Project } from "@/lib/types";
 import ProjectGrid from "@/components/ProjectGrid";
+import Breadcrumbs from "@/components/Breadcrumbs";
 
 interface CollectionPageProps {
   params: Promise<{ slug: string }>;
@@ -61,26 +61,14 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <Link
-        href="/explore"
-        className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-coral transition-colors"
-      >
-        <svg
-          className="h-4 w-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        Back to Explore
-      </Link>
+    <div className="mx-auto max-w-7xl px-6 py-10 sm:px-8 lg:px-12">
+      <Breadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Explore", href: "/explore" },
+          { label: collection.title },
+        ]}
+      />
 
       <div className="mt-6">
         <div

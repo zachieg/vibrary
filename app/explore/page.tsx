@@ -46,7 +46,7 @@ export default async function ExplorePage() {
   const counts = await getCollectionCounts();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-12">
       <div className="text-center">
         <h1 className="font-serif text-5xl font-bold text-text-primary">
           Explore
