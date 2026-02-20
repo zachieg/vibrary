@@ -17,14 +17,13 @@ export async function GET(
     .from("projects")
     .select("*")
     .eq("slug", slug)
-    .eq("status", "published")
-    .single();
+    .eq("status", "published");
 
-  if (error || !data) {
+  if (error || !data || data.length === 0) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  const { submitter_email, ...project } = data as Project;
+  const { submitter_email, ...project } = data[0] as Project;
   return NextResponse.json(project);
 }
 
@@ -39,21 +38,21 @@ async function verifyOwnership(slug: string) {
     return { error: "Authentication required", status: 401, supabase, project: null };
   }
 
-  const { data: project, error: fetchError } = await supabase
+  const { data: projects, error: fetchError } = await supabase
     .from("projects")
     .select("*")
-    .eq("slug", slug)
-    .single();
+    .eq("slug", slug);
 
-  if (fetchError || !project) {
+  if (fetchError || !projects || projects.length === 0) {
     return { error: "Project not found", status: 404, supabase, project: null };
   }
 
-  if ((project as Project).submitter_email.toLowerCase() !== user.email.toLowerCase()) {
+  const project = projects[0] as Project;
+  if (project.submitter_email.toLowerCase() !== user.email.toLowerCase()) {
     return { error: "You can only edit your own projects", status: 403, supabase, project: null };
   }
 
-  return { error: null, status: 200, supabase, project: project as Project };
+  return { error: null, status: 200, supabase, project };
 }
 
 export async function PATCH(
@@ -104,14 +103,17 @@ export async function PATCH(
       .from("projects")
       .update(updates)
       .eq("id", project!.id)
-      .select()
-      .single();
+      .select();
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    const { submitter_email, ...result } = data as Project;
+    if (!data || data.length === 0) {
+      return NextResponse.json({ error: "Update failed — project not found or access denied" }, { status: 404 });
+    }
+
+    const { submitter_email, ...result } = data[0] as Project;
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });

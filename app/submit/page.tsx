@@ -40,11 +40,10 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
         .select(
           "slug, title, tagline, description, demo_url, repo_url, build_story, setup_difficulty, quick_start, tags, ai_tool_used, submitter_email"
         )
-        .eq("slug", edit)
-        .single();
+        .eq("slug", edit);
 
-      if (data && data.submitter_email.toLowerCase() === user.email.toLowerCase()) {
-        const { submitter_email: _e, ...rest } = data;
+      if (data?.[0] && data[0].submitter_email.toLowerCase() === user.email.toLowerCase()) {
+        const { submitter_email: _e, ...rest } = data[0];
         editData = rest;
       }
     }
