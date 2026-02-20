@@ -221,33 +221,36 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
 
     try {
       if (isEditMode) {
-        // PATCH existing project via API (handles auth server-side)
-        const res = await fetch(`/api/v1/projects/${editSlug}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: title.trim(),
-            tagline: tagline.trim(),
-            description: description.trim(),
-            demo_url: demoUrl.trim() || null,
-            repo_url: repoUrl.trim() || null,
-            build_story: buildStory.trim() || null,
-            setup_difficulty: setupDifficulty || null,
-            quick_start: quickStart.trim() || null,
-            tags: selectedTags,
-            ai_tool_used: aiTool,
-          }),
-        });
-
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? "Update failed");
+        // Update directly via the browser Supabase client (bypasses API route
+        // to avoid RLS issues with server-side anon key context)
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        if (authError || !user?.email) {
+          throw new Error("You must be signed in to edit a project");
         }
 
-        const updated = await res.json();
+        const updates = {
+          title: title.trim(),
+          tagline: tagline.trim(),
+          description: description.trim(),
+          demo_url: demoUrl.trim() || null,
+          repo_url: repoUrl.trim() || null,
+          build_story: buildStory.trim() || null,
+          setup_difficulty: setupDifficulty || null,
+          quick_start: quickStart.trim() || null,
+          tags: selectedTags,
+          ai_tool_used: aiTool,
+        };
+
+        const { error: updateError } = await supabase
+          .from("projects")
+          .update(updates)
+          .eq("slug", editSlug!);
+
+        if (updateError) throw new Error(updateError.message);
+
         setShowSuccess(true);
         setTimeout(() => {
-          router.push(`/project/${updated.slug ?? editSlug}`);
+          router.push(`/project/${editSlug}`);
         }, 1500);
         return;
       }
