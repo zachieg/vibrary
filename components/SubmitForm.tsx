@@ -19,6 +19,7 @@ interface EditableFields {
   build_story?: string | null;
   setup_difficulty?: string | null;
   quick_start?: string | null;
+  screenshot_url?: string | null;
   tags?: string[];
   ai_tool_used?: string;
 }
@@ -60,7 +61,7 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
   const [githubError, setGithubError] = useState<string | null>(null);
 
   // OG screenshot
-  const [ogScreenshotUrl, setOgScreenshotUrl] = useState<string | null>(null);
+  const [ogScreenshotUrl, setOgScreenshotUrl] = useState<string | null>(initialData?.screenshot_url ?? null);
   const [ogPreview, setOgPreview] = useState<{ ogImage: string | null } | null>(null);
   const [ogFetching, setOgFetching] = useState(false);
 
@@ -228,7 +229,27 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
           throw new Error("You must be signed in to edit a project");
         }
 
-        const updates = {
+        // Handle screenshot upload if a new file was selected
+        let screenshotUrl: string | null | undefined = undefined;
+        if (screenshot) {
+          const ext = screenshot.name.split(".").pop() || "png";
+          const filename = `${editSlug}-${Date.now()}.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from("project-screenshots")
+            .upload(filename, screenshot, { contentType: screenshot.type });
+
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from("project-screenshots")
+              .getPublicUrl(filename);
+            screenshotUrl = urlData.publicUrl;
+          }
+        } else if (ogScreenshotUrl !== (initialData?.screenshot_url ?? null)) {
+          // OG image was selected or screenshot was cleared
+          screenshotUrl = ogScreenshotUrl;
+        }
+
+        const updates: Record<string, unknown> = {
           title: title.trim(),
           tagline: tagline.trim(),
           description: description.trim(),
@@ -240,6 +261,11 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
           tags: selectedTags,
           ai_tool_used: aiTool,
         };
+
+        // Only include screenshot_url if it changed
+        if (screenshotUrl !== undefined) {
+          updates.screenshot_url = screenshotUrl;
+        }
 
         const { error: updateError } = await supabase
           .from("projects")

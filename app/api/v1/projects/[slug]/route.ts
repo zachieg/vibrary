@@ -75,7 +75,7 @@ export async function PATCH(
     const updates: Record<string, unknown> = {};
     const allowed = [
       "title", "tagline", "description", "demo_url", "repo_url",
-      "build_story", "setup_difficulty", "quick_start", "tags", "ai_tool_used",
+      "build_story", "setup_difficulty", "quick_start", "screenshot_url", "tags", "ai_tool_used",
     ];
     for (const field of allowed) {
       if (body[field] !== undefined) updates[field] = body[field];

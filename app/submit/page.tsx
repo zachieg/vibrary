@@ -24,6 +24,7 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
     build_story: string | null;
     setup_difficulty: string | null;
     quick_start: string | null;
+    screenshot_url: string | null;
     tags: string[];
     ai_tool_used: string;
   } | null = null;
@@ -38,7 +39,7 @@ export default async function SubmitPage({ searchParams }: SubmitPageProps) {
       const { data } = await supabase
         .from("projects")
         .select(
-          "slug, title, tagline, description, demo_url, repo_url, build_story, setup_difficulty, quick_start, tags, ai_tool_used, submitter_email"
+          "slug, title, tagline, description, demo_url, repo_url, build_story, setup_difficulty, quick_start, screenshot_url, tags, ai_tool_used, submitter_email"
         )
         .eq("slug", edit);
 
