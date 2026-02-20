@@ -99,21 +99,17 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid repo URL" }, { status: 400 });
     }
 
-    const { data, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from("projects")
       .update(updates)
-      .eq("id", project!.id)
-      .select();
+      .eq("id", project!.id);
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    if (!data || data.length === 0) {
-      return NextResponse.json({ error: "Update failed — project not found or access denied" }, { status: 404 });
-    }
-
-    const { submitter_email, ...result } = data[0] as Project;
+    // Return the merged result — we already have the project from ownership check
+    const { submitter_email, ...result } = { ...project!, ...updates } as Project;
     return NextResponse.json(result);
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
