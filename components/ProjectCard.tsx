@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { timeAgo, truncate } from "@/lib/utils";
-import { getGradient, getIcon } from "@/lib/gradients";
+import GenerativePattern from "./GenerativePattern";
 import UpvoteButton from "./UpvoteButton";
 
 interface ProjectCardProps {
@@ -47,11 +47,7 @@ export default function ProjectCard({
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
-            <div
-              className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${getGradient(slug)}`}
-            >
-              <span className="font-mono text-4xl font-bold text-white/80">{getIcon(tags)}</span>
-            </div>
+            <GenerativePattern seed={slug} tags={tags} className="h-full w-full" />
           )}
           {/* AI tool badge */}
           <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-violet shadow-sm backdrop-blur-sm">

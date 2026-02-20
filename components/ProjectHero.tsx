@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { getGradient, getIcon } from "@/lib/gradients";
+import GenerativePattern from "./GenerativePattern";
 import UpvoteButton from "./UpvoteButton";
 import ShareButtons from "./ShareButtons";
 
@@ -42,11 +42,7 @@ export default function ProjectHero({
             />
           </div>
         ) : (
-          <div
-            className={`flex h-[400px] w-full items-center justify-center bg-gradient-to-br ${getGradient(title)}`}
-          >
-            <span className="font-mono text-7xl font-bold text-white/80">{getIcon(tags)}</span>
-          </div>
+          <GenerativePattern seed={slug} tags={tags} className="h-[400px] w-full" />
         )}
       </div>
 
