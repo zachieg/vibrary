@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { timeAgo, truncate } from "@/lib/utils";
+import SafeImage from "./SafeImage";
 import GenerativePattern from "./GenerativePattern";
 import UpvoteButton from "./UpvoteButton";
 
@@ -39,12 +39,15 @@ export default function ProjectCard({
         {/* Thumbnail */}
         <div className="relative aspect-video overflow-hidden">
           {screenshot_url ? (
-            <Image
+            <SafeImage
               src={screenshot_url}
               alt={title}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              fallbackSeed={slug}
+              fallbackTags={tags}
+              fallbackClassName="h-full w-full"
             />
           ) : (
             <GenerativePattern seed={slug} tags={tags} className="h-full w-full" />

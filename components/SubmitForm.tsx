@@ -238,12 +238,14 @@ export default function SubmitForm({ editSlug, initialData }: SubmitFormProps = 
             .from("project-screenshots")
             .upload(filename, screenshot, { contentType: screenshot.type });
 
-          if (!uploadError) {
-            const { data: urlData } = supabase.storage
-              .from("project-screenshots")
-              .getPublicUrl(filename);
-            screenshotUrl = urlData.publicUrl;
+          if (uploadError) {
+            throw new Error(`Screenshot upload failed: ${uploadError.message}`);
           }
+
+          const { data: urlData } = supabase.storage
+            .from("project-screenshots")
+            .getPublicUrl(filename);
+          screenshotUrl = urlData.publicUrl;
         } else if (ogScreenshotUrl !== (initialData?.screenshot_url ?? null)) {
           // OG image was selected or screenshot was cleared
           screenshotUrl = ogScreenshotUrl;

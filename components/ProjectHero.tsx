@@ -1,4 +1,4 @@
-import Image from "next/image";
+import SafeImage from "./SafeImage";
 import GenerativePattern from "./GenerativePattern";
 import UpvoteButton from "./UpvoteButton";
 import ShareButtons from "./ShareButtons";
@@ -30,7 +30,7 @@ export default function ProjectHero({
       <div className="relative overflow-hidden rounded-xl border border-gray-200">
         {screenshotUrl ? (
           <div className="relative" style={{ maxHeight: "500px" }}>
-            <Image
+            <SafeImage
               src={screenshotUrl}
               alt={`${title} screenshot`}
               width={1200}
@@ -39,6 +39,9 @@ export default function ProjectHero({
               style={{ maxHeight: "500px" }}
               sizes="(max-width: 1200px) 100vw, 800px"
               priority
+              fallbackSeed={slug}
+              fallbackTags={tags}
+              fallbackClassName="h-[400px] w-full"
             />
           </div>
         ) : (
